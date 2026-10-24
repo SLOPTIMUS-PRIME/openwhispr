@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { PERSONAL_FORK, personalSetting } from "../config/forkPolicy";
 import { API_ENDPOINTS } from "../config/constants";
 import i18n, { normalizeUiLanguage } from "../i18n";
 import { ensureAgentNameInDictionary } from "../utils/agentName";
@@ -136,6 +137,7 @@ function defaultTranscriptionModel(
   providerId: string,
   context: TranscriptionPolicyContext
 ): string {
+  if (providerId === "openrouter") return "";
   return transcriptionProviderModels(providerId, context)[0]?.id ?? "whisper-1";
 }
 
@@ -144,7 +146,7 @@ function transcriptionModelBelongsToProvider(
   modelId: string,
   context: TranscriptionPolicyContext
 ): boolean {
-  if (providerId === "custom") return Boolean(modelId);
+  if (providerId === "custom" || providerId === "openrouter") return Boolean(modelId);
   return transcriptionProviderModels(providerId, context).some((model) => model.id === modelId);
 }
 
@@ -181,8 +183,7 @@ function defaultLlmModel(mode: InferenceMode, providerId: string, bedrockRegion:
 }
 
 function readString(key: string, fallback: string): string {
-  if (!isBrowser) return fallback;
-  return localStorage.getItem(key) ?? fallback;
+  return personalSetting(key, (isBrowser ? localStorage.getItem(key) : null) ?? fallback);
 }
 
 // Literal rather than an import from ModelRegistry: ModelRegistry imports this
@@ -272,6 +273,7 @@ function initializeAutoUpdatesDefault() {
 initializeAutoUpdatesDefault();
 
 const BOOLEAN_SETTINGS = new Set([
+  "geminiSmartCleanup",
   "useLocalWhisper",
   "meetingUseLocalWhisper",
   "uploadUseLocalWhisper",
@@ -1017,6 +1019,8 @@ export interface SettingsState
   voiceAgentScreenContext: boolean;
   emailDraftTarget: EmailDraftTargetSetting;
   toneStyleEnabled: boolean;
+  geminiSmartCleanup: boolean;
+  setGeminiSmartCleanup: (value: boolean) => void;
   toneStyles: ToneStyles;
   useDictationAgentVisionModel: boolean;
   dictationAgentVisionMode: InferenceMode;
@@ -1733,7 +1737,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   keepTranscriptionInClipboard: readBoolean("keepTranscriptionInClipboard", false),
   noteFilesEnabled: readBoolean("noteFilesEnabled", false),
   noteFilesPath: readString("noteFilesPath", ""),
-  isSignedIn: readBoolean("isSignedIn", false),
+  isSignedIn: PERSONAL_FORK ? false : readBoolean("isSignedIn", false),
 
   transcriptionMode: (() => {
     const v = readString("transcriptionMode", "openwhispr");
@@ -1972,6 +1976,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   voiceAgentScreenContext: readBoolean("voiceAgentScreenContext", false),
   emailDraftTarget: normalizeEmailDraftTarget(readString("emailDraftTarget", "auto")),
   toneStyleEnabled: readBoolean("toneStyleEnabled", false),
+  geminiSmartCleanup: readBoolean("geminiSmartCleanup", false),
   toneStyles: normalizeToneStyles(readString("toneStyles", "")),
   useDictationAgentVisionModel: readBoolean("useDictationAgentVisionModel", false),
   // Cloud already vision-routes screenshot commands, so the override is BYOK-only.
@@ -2019,6 +2024,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   setVoiceAgentScreenContext: createBooleanSetter("voiceAgentScreenContext"),
   setEmailDraftTarget: createStringSetter("emailDraftTarget"),
   setToneStyleEnabled: createBooleanSetter("toneStyleEnabled"),
+  setGeminiSmartCleanup: createBooleanSetter("geminiSmartCleanup"),
   setToneStyles: (styles) => {
     if (isBrowser) localStorage.setItem("toneStyles", JSON.stringify(styles));
     useSettingsStore.setState({ toneStyles: styles });
@@ -2591,6 +2597,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   setNoteFilesPath: createStringSetter("noteFilesPath"),
 
   setIsSignedIn: (value: boolean) => {
+    if (PERSONAL_FORK) value = false;
     if (isBrowser) localStorage.setItem("isSignedIn", String(value));
     set({ isSignedIn: value });
   },

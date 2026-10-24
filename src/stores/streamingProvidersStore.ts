@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { PERSONAL_FORK } from "../config/forkPolicy";
 import logger from "../utils/logger";
 import type {
   NoteRecordingConfigFailure,
@@ -20,6 +21,7 @@ export const useStreamingProvidersStore = create<StreamingProvidersState>()(() =
 let inFlight: Promise<NoteRecordingConfigResult | null> | null = null;
 
 export async function fetchProviders(): Promise<NoteRecordingConfigResult | null> {
+  if (PERSONAL_FORK) return null;
   if (inFlight) return inFlight;
   if (!window.electronAPI?.getNoteRecordingConfig) return null;
 

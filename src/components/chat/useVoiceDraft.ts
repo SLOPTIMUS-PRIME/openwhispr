@@ -56,6 +56,7 @@ export function useVoiceDraft({ onTranscript, onError }: UseVoiceDraftOptions) {
   const discardRef = useRef(false);
 
   const buildConfig = (): FileTranscriptionConfig => ({
+    geminiSmartCleanup: useSettingsStore.getState().geminiSmartCleanup,
     useLocalWhisper,
     localTranscriptionProvider: localTranscriptionProvider as string,
     whisperModel,

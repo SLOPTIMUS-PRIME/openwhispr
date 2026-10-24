@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { PERSONAL_FORK } from "../config/forkPolicy";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./ui/dialog";
 import AuthenticationStep from "./AuthenticationStep";
@@ -13,6 +14,7 @@ interface SignInDialogProps {
 export default function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
   const { t } = useTranslation();
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
+  if (PERSONAL_FORK) return null;
 
   const handleOpenChange = (next: boolean) => {
     if (!next) setPendingVerificationEmail(null);

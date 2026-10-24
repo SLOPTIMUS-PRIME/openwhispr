@@ -419,6 +419,18 @@ async function testProviderConnection(
   if (provider === "deepgram") return testDeepgramKey(request, fetchImpl);
 
   const model = String(config?.model || "").trim();
+  // The catalog lists catalog variants (e.g. :free), but not routing sorts.
+  // This mirrors openRouterCatalogId in models/openrouterVariants.ts without
+  // importing a renderer TypeScript module into this CommonJS main module.
+  const discoveryModel =
+    provider === "custom" && new URL(config.baseUrl).origin === "https://openrouter.ai"
+      ? model
+          .split(":")
+          .filter(
+            (part, index) => index === 0 || !["nitro", "floor", "exacto", "online"].includes(part)
+          )
+          .join(":")
+      : model;
   let failure = null;
   let everyListMissing = true;
   for (const endpoint of request.endpoints) {
@@ -426,7 +438,10 @@ async function testProviderConnection(
       if (!response.ok) return describeResponseFailure(response, provider);
       if (provider === "openrouter") return describeOpenRouterKey(response);
       // AssemblyAI's probe lists transcripts, not models, so a 200 is the whole signal.
-      if (provider === "assemblyai" || (await responseOffersModel(response, model, provider))) {
+      if (
+        provider === "assemblyai" ||
+        (await responseOffersModel(response, discoveryModel, provider))
+      ) {
         return null;
       }
       return MODEL_NOT_FOUND;

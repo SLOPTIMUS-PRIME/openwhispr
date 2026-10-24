@@ -1642,6 +1642,7 @@ declare global {
       retryTranscription: (
         id: number,
         settings?: {
+          geminiSmartCleanup?: boolean;
           useLocalWhisper: boolean;
           localTranscriptionProvider: string;
           cloudTranscriptionMode: string;
@@ -2392,6 +2393,13 @@ declare global {
         keyterms?: string[];
       }) => Promise<ProxyTranscriptionResult>;
 
+      proxyOpenrouterTranscription?: (data: {
+        audioBuffer: ArrayBuffer;
+        model: string;
+        language?: string;
+        contentType?: string;
+      }) => Promise<ProxyTranscriptionResult>;
+
       // Groq API key management
       getGroqKey: () => Promise<string | null>;
       saveGroqKey: (key: string) => Promise<void>;
@@ -2816,6 +2824,7 @@ declare global {
 
       // BYOK audio file transcription
       transcribeAudioFileByok?: (options: {
+        geminiSmartCleanup?: boolean;
         filePath: string;
         apiKey: string;
         baseUrl: string;

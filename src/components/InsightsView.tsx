@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { BarChart3, Cloud, CloudUpload, Flame, Gauge, Mic2, Trophy } from "./icons";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
+import { PERSONAL_FORK } from "../config/forkPolicy";
 import { useHotkey } from "../hooks/useHotkey";
 import { useInsightsSyncOptIn } from "../hooks/useInsightsSyncOptIn";
 import { useSettings } from "../hooks/useSettings";
@@ -511,9 +512,11 @@ export default function InsightsView({ onSignIn }: InsightsViewProps) {
             <TabsTrigger value="usage" variant="pill">
               {t("insights.yourUsage")}
             </TabsTrigger>
-            <TabsTrigger value="leaderboard" variant="pill">
-              {t("insights.leaderboard.title")}
-            </TabsTrigger>
+            {!PERSONAL_FORK && (
+              <TabsTrigger value="leaderboard" variant="pill">
+                {t("insights.leaderboard.title")}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {activeTab === "usage" ? (

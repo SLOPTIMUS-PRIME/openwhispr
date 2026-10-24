@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+import { PERSONAL_FORK } from "../config/forkPolicy";
 import { ssoClient } from "@better-auth/sso/client";
 import { openExternalLink } from "../utils/externalLinks";
 import {
@@ -11,19 +12,21 @@ import {
 } from "./authRequestContext";
 
 export const AUTH_URL = import.meta.env.VITE_AUTH_URL || "https://auth.openwhispr.com";
-export const authClient = createAuthClient({
-  baseURL: AUTH_URL,
-  plugins: [ssoClient()],
-  fetchOptions: {
-    credentials: "omit",
-    customFetchImpl: authContextFetch,
-    headers: { "x-openwhispr-source": "desktop" },
-    onRequest: prepareAuthRequest,
-    onResponse: handleAuthRequestResponse,
-    onSuccess: handleAuthRequestSuccess,
-    onError: handleAuthRequestError,
-  },
-});
+export const authClient = PERSONAL_FORK
+  ? null
+  : createAuthClient({
+      baseURL: AUTH_URL,
+      plugins: [ssoClient()],
+      fetchOptions: {
+        credentials: "omit",
+        customFetchImpl: authContextFetch,
+        headers: { "x-openwhispr-source": "desktop" },
+        onRequest: prepareAuthRequest,
+        onResponse: handleAuthRequestResponse,
+        onSuccess: handleAuthRequestSuccess,
+        onError: handleAuthRequestError,
+      },
+    });
 
 let authRefetchTimer: ReturnType<typeof setTimeout> | null = null;
 window.electronAPI?.onAuthTokenStateChanged?.((state) => {
@@ -34,7 +37,7 @@ window.electronAPI?.onAuthTokenStateChanged?.((state) => {
   if (authRefetchTimer) clearTimeout(authRefetchTimer);
   authRefetchTimer = setTimeout(() => {
     authRefetchTimer = null;
-    authClient.$store.notify("$sessionSignal");
+    authClient?.$store.notify("$sessionSignal");
   }, 0);
 });
 
@@ -135,7 +138,7 @@ export async function signOut(): Promise<void> {
   credentialAccountCache = null;
   await window.electronAPI?.closeActivationStream?.().catch(() => undefined);
   try {
-    await authClient.signOut();
+    await authClient?.signOut();
   } catch {
     // Local sign-out must still cross a credential generation boundary when
     // the server is offline; the remote session can expire independently.
@@ -179,6 +182,7 @@ export async function withSessionRefresh<T>(operation: () => Promise<T>): Promis
 const DESKTOP_OAUTH_CALLBACK_URL = "https://openwhispr.com/auth/desktop-callback";
 
 export async function signInWithSocial(provider: SocialProvider): Promise<{ error?: Error }> {
+  if (!authClient) return { error: new Error("Accounts are disabled in this personal fork") };
   try {
     const isElectron = Boolean((window as any).electronAPI);
 
@@ -203,6 +207,7 @@ export async function signInWithSocial(provider: SocialProvider): Promise<{ erro
 }
 
 export async function signInWithSSO(email: string): Promise<{ error?: Error }> {
+  if (!authClient) return { error: new Error("Accounts are disabled in this personal fork") };
   try {
     const isElectron = Boolean((window as any).electronAPI);
 
@@ -227,6 +232,7 @@ export async function signInWithSSO(email: string): Promise<{ error?: Error }> {
 }
 
 export async function requestPasswordReset(email: string): Promise<{ error?: Error }> {
+  if (!authClient) return { error: new Error("Accounts are disabled in this personal fork") };
   try {
     const { error } = await authClient.requestPasswordReset({
       email: email.trim(),
@@ -257,6 +263,7 @@ function toAuthActionError(source: unknown, fallbackMessage: string): AuthAction
 }
 
 export async function updateDisplayName(name: string): Promise<{ error?: AuthActionError }> {
+  if (!authClient) return { error: new Error("Accounts are disabled in this personal fork") };
   try {
     const { error } = await authClient.updateUser({ name });
     if (error) return { error: toAuthActionError(error, "Failed to update name") };
@@ -271,6 +278,7 @@ export async function changePassword(params: {
   newPassword: string;
   revokeOtherSessions: boolean;
 }): Promise<{ error?: AuthActionError }> {
+  if (!authClient) return { error: new Error("Accounts are disabled in this personal fork") };
   try {
     const { error } = await authClient.changePassword({
       currentPassword: params.currentPassword,
@@ -294,6 +302,7 @@ export const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || "https://admin.openwh
  * reason, fall back to the bare console URL and let the user sign in there.
  */
 export async function openAdminConsole(): Promise<void> {
+  if (!authClient) return;
   let url = ADMIN_URL;
   try {
     // The generated $fetch types don't discriminate on `throw`, and the
@@ -319,6 +328,7 @@ export async function openAdminConsole(): Promise<void> {
 let credentialAccountCache: boolean | null = null;
 
 export async function hasCredentialAccount(): Promise<boolean> {
+  if (!authClient) return false;
   if (credentialAccountCache !== null) return credentialAccountCache;
   try {
     const { data, error } = await authClient.listAccounts();

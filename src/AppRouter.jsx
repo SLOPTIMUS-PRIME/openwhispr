@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect, useState } from "react";
+import { PERSONAL_FORK } from "./config/forkPolicy";
 import { useTranslation } from "react-i18next";
 import App from "./App.jsx";
 import AgentDictationPillOverlay from "./components/dictation/AgentDictationPillOverlay.tsx";
@@ -95,6 +96,7 @@ function MainApp() {
 
     const onboardingCompleted = localStorage.getItem("onboardingCompleted") === "true";
     const authSkipped =
+      PERSONAL_FORK ||
       localStorage.getItem("authenticationSkipped") === "true" ||
       localStorage.getItem("skipAuth") === "true";
     const onboardingInProgress = isOnboardingInProgress();
@@ -132,6 +134,7 @@ function MainApp() {
     // compact window without first flashing restored control-panel dimensions.
     const completed = localStorage.getItem("onboardingCompleted") === "true";
     const authSkipped =
+      PERSONAL_FORK ||
       localStorage.getItem("authenticationSkipped") === "true" ||
       localStorage.getItem("skipAuth") === "true";
     if (completed && !isOnboardingInProgress() && (isSignedIn || authSkipped)) {
@@ -162,6 +165,7 @@ function MainApp() {
     const normalAppVisible =
       onboardingCompleted && (!isControlPanel || (!showOnboarding && !needsReauth));
     const authSkipped =
+      PERSONAL_FORK ||
       localStorage.getItem("authenticationSkipped") === "true" ||
       localStorage.getItem("skipAuth") === "true";
     // Main starts fail-closed. Only a renderer that has resolved the route and

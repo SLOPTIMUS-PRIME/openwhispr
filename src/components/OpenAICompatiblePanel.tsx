@@ -10,6 +10,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { Button } from "./ui/button";
 import ModelCardList from "./ui/ModelCardList";
+import OpenRouterModelVariants from "./OpenRouterModelVariants";
+import { openRouterCatalogId, selectOpenRouterModel } from "../models/openrouterVariants";
 import SearchableModelList, { MODEL_SEARCH_THRESHOLD } from "./ui/SearchableModelList";
 import { buildApiUrl, getModelListBaseCandidates, normalizeBaseUrl } from "../config/constants";
 import { isSecureHttpEndpoint } from "../utils/urlUtils";
@@ -46,6 +48,7 @@ interface OpenAICompatiblePanelProps {
   getKeyUrl?: string;
   // The connection the panel checks: the user's own server, or OpenRouter.
   provider?: "custom" | "openrouter";
+  scope?: "reasoning" | "transcription";
 }
 
 export default function OpenAICompatiblePanel({
@@ -62,6 +65,7 @@ export default function OpenAICompatiblePanel({
   apiKeyRequired = false,
   getKeyUrl,
   provider = "custom",
+  scope = "reasoning",
 }: OpenAICompatiblePanelProps) {
   const { t } = useTranslation();
   const [draftBase, setDraftBase] = useState(baseUrl);
@@ -97,6 +101,11 @@ export default function OpenAICompatiblePanel({
   }, [baseUrl]);
 
   const normalizedBase = useMemo(() => normalizeBaseUrl(baseUrl), [baseUrl]);
+  const isOpenRouter =
+    provider === "openrouter" || /^https:\/\/openrouter\.ai(?:\/|$)/.test(normalizedBase);
+  const modelListPath = isOpenRouter
+    ? `/models?output_modalities=${scope === "transcription" ? "transcription" : "text"}`
+    : "/models";
   const visible = usePanelVisible();
   const editing = useFocusHold();
   // An address with no http:// or https:// is left to the model list, which says so.
@@ -111,7 +120,7 @@ export default function OpenAICompatiblePanel({
   const check = useConnectionAutoCheck({
     // The model is this panel's own (or "" under a tab that is only browsed), so a saved model
     // the server no longer lists fails as modelNotFound.
-    config: { scope: "reasoning", provider, baseUrl: normalizedBase, apiKey, model },
+    config: { scope, provider, baseUrl: normalizedBase, apiKey, model },
     // A hidden panel is not ready to ask; a shown one asks again, and the main process answers
     // a check it remembers at once.
     ready: checkReady && visible,
@@ -204,7 +213,10 @@ export default function OpenAICompatiblePanel({
         }
 
         const fetchModelOptions = async (base: string): Promise<ModelOption[]> => {
-          const response = await fetch(buildApiUrl(base, "/models"), { method: "GET", headers });
+          const response = await fetch(buildApiUrl(base, modelListPath), {
+            method: "GET",
+            headers,
+          });
 
           if (!response.ok) {
             const errorText = await response.text().catch(() => "");
@@ -224,6 +236,18 @@ export default function OpenAICompatiblePanel({
           // Coerce fields defensively: non-conformant endpoints may return
           // numeric ids or object descriptions, which would crash the render.
           return (rawModels as Array<Record<string, unknown>>)
+            .filter((item) => {
+              if (!item || typeof item !== "object") return false;
+              if (!isOpenRouter) return true;
+              const modalities = (item.architecture as { output_modalities?: string[] } | undefined)
+                ?.output_modalities;
+              const output = Array.isArray(modalities) ? modalities : undefined;
+              if (scope === "transcription" && !output?.includes("transcription")) return false;
+              if (scope === "reasoning" && output && !output.includes("text")) return false;
+              return !String(item.id || "")
+                .split(":")
+                .some((suffix) => ["batch", "thinking", "extended"].includes(suffix));
+            })
             .map((item) => {
               const rawValue = item?.id ?? item?.name;
               if (rawValue === undefined || rawValue === null || rawValue === "") return null;
@@ -235,7 +259,12 @@ export default function OpenAICompatiblePanel({
                   : ownedBy
                     ? t("reasoning.custom.ownerLabel", { owner: ownedBy })
                     : undefined;
-              return { value, label: value, description, ownedBy } as ModelOption;
+              return {
+                value,
+                label: typeof item.name === "string" ? item.name : value,
+                description,
+                ownedBy,
+              } as ModelOption;
             })
             .filter(Boolean) as ModelOption[];
         };
@@ -297,7 +326,7 @@ export default function OpenAICompatiblePanel({
         }
       }
     },
-    [baseUrl, lockedBaseUrl, t]
+    [baseUrl, lockedBaseUrl, isOpenRouter, modelListPath, scope, t]
   );
 
   useEffect(() => {
@@ -367,7 +396,11 @@ export default function OpenAICompatiblePanel({
   }, [applyBase, isDraftDirty, trimmedDraft, loadRemoteModels]);
 
   const displayedModels = isDraftDirty ? [] : modelOptions;
-  const queryUrl = buildApiUrl(hasBase ? normalizedBase : baseUrlPlaceholder, "/models");
+  const queryUrl = buildApiUrl(hasBase ? normalizedBase : baseUrlPlaceholder, modelListPath);
+  const catalogIds = modelOptions.map((option) => option.value);
+  const handleModelSelect = (value: string) =>
+    setModel(isOpenRouter ? selectOpenRouterModel(model, value, catalogIds) : value);
+  const selectedCatalogModel = isOpenRouter ? openRouterCatalogId(model) : model;
 
   return (
     <>
@@ -431,6 +464,31 @@ export default function OpenAICompatiblePanel({
       </div>
 
       <div className="space-y-2 pt-3">
+        <h4 className="font-medium text-foreground">{t("reasoning.enterprise.customModelId")}</h4>
+        <ProviderCheckField
+          aria-label={t("reasoning.enterprise.customModelId")}
+          value={model}
+          onChange={(event) => setModel(event.target.value)}
+          placeholder="provider/model:nitro"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <p className="text-xs text-muted-foreground">
+          Enter an exact model ID, including optional OpenRouter suffixes such as :nitro. The list
+          below is optional.
+        </p>
+      </div>
+
+      {isOpenRouter && (
+        <OpenRouterModelVariants
+          model={model}
+          catalogIds={catalogIds}
+          onChange={setModel}
+          scope={scope}
+        />
+      )}
+
+      <div className="space-y-2 pt-3">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-medium text-foreground">{t("reasoning.availableModels")}</h4>
           <div className="flex gap-2">
@@ -489,14 +547,14 @@ export default function OpenAICompatiblePanel({
         {displayedModels.length > MODEL_SEARCH_THRESHOLD ? (
           <SearchableModelList
             models={displayedModels}
-            selectedModel={model}
-            onModelSelect={setModel}
+            selectedModel={selectedCatalogModel}
+            onModelSelect={handleModelSelect}
           />
         ) : (
           <ModelCardList
             models={displayedModels}
-            selectedModel={model}
-            onModelSelect={setModel}
+            selectedModel={selectedCatalogModel}
+            onModelSelect={handleModelSelect}
             truncateDescription
           />
         )}

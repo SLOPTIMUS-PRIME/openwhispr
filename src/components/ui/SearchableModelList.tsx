@@ -6,6 +6,7 @@ import { Input } from "./input";
 import { ModelCard, type ModelCardOption } from "./ModelCardList";
 import { getRemoteProviderIcon } from "../../utils/providerIcons";
 import { LIST_SEARCH_THRESHOLD } from "../../config/constants";
+import { modelRowHeight } from "../../utils/modelRowHeight";
 
 // Above this count, OpenAICompatiblePanel switches from the plain list to this
 // searchable/grouped/virtualized variant.
@@ -127,7 +128,12 @@ export default function SearchableModelList({
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: (index) => (rows[index].type === "header" ? 30 : 40),
+    estimateSize: (index) => (rows[index]?.type === "header" ? 30 : 40),
+    measureElement: (element, _entry, instance) =>
+      modelRowHeight(
+        element,
+        instance.options.estimateSize(Number(element.getAttribute("data-index")))
+      ),
     getItemKey: (index) => rows[index].key,
     overscan: 8,
   });

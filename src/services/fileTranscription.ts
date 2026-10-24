@@ -40,6 +40,7 @@ export interface DiarizationSettings {
 }
 
 export interface FileTranscriptionConfig {
+  geminiSmartCleanup?: boolean;
   useLocalWhisper: boolean;
   localTranscriptionProvider: string;
   whisperModel: string;
@@ -88,6 +89,7 @@ export function getTranscriptionApiKey(provider: string, keys: TranscriptionApiK
       return keys.deepgramApiKey;
     case "assemblyai":
       return keys.assemblyaiApiKey;
+    case "openrouter":
     case "custom":
       return keys.customTranscriptionApiKey || "";
     default:
@@ -113,6 +115,7 @@ export function resolveFileTranscriptionRoute(
       cloudTranscriptionBaseUrl: cfg.cloudTranscriptionBaseUrl,
       cortiEnvironment: cfg.cortiEnvironment,
       cortiTenant: cfg.cortiTenant,
+      geminiSmartCleanup: cfg.geminiSmartCleanup,
     },
     providers: getTranscriptionProviders(),
     managed,
@@ -193,6 +196,7 @@ export async function transcribeFile(
     language: cfg.language,
     environment: cfg.cortiEnvironment,
     tenant: cfg.cortiTenant,
+    geminiSmartCleanup: cfg.geminiSmartCleanup,
     transcriptionMode: cfg.transcriptionMode,
     remoteTranscriptionUrl: cfg.remoteTranscriptionUrl,
     remoteTranscriptionModel: cfg.remoteTranscriptionModel,

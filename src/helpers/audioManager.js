@@ -537,6 +537,16 @@ const MANAGED_TRANSCRIPTION_SPEC = {
 };
 
 const PROXY_TRANSCRIPTION_PROVIDERS = {
+  openrouter: {
+    displayName: "OpenRouter",
+    ipc: () => window.electronAPI?.proxyOpenrouterTranscription,
+    buildPayload: ({ audioBuffer, model, language, mimeType }) => ({
+      audioBuffer,
+      model,
+      language,
+      contentType: mimeType,
+    }),
+  },
   tinfoil: {
     displayName: "Tinfoil",
     ipc: () => window.electronAPI?.proxyTinfoilTranscription,
@@ -563,11 +573,12 @@ const PROXY_TRANSCRIPTION_PROVIDERS = {
   gemini: {
     displayName: "Gemini",
     ipc: () => window.electronAPI?.proxyGeminiTranscription,
-    buildPayload: ({ audioBuffer, model, language, keyterms }) => ({
+    buildPayload: ({ audioBuffer, model, language, keyterms, apiSettings }) => ({
       audioBuffer,
       model,
       language,
       keyterms: keyterms.length > 0 ? keyterms : undefined,
+      smartCleanup: apiSettings.geminiSmartCleanup === true,
     }),
   },
   xai: {
@@ -2768,6 +2779,14 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         err.code = "API_KEY_MISSING";
         throw err;
       }
+    } else if (provider === "openrouter") {
+      apiKey = s.customTranscriptionApiKey;
+      if (!apiKey?.trim()) apiKey = await window.electronAPI.getCustomTranscriptionKey?.();
+      if (!apiKey?.trim()) {
+        const err = new Error("OpenRouter API key not found. Add it in Settings → Speech to Text.");
+        err.code = "API_KEY_MISSING";
+        throw err;
+      }
     } else if (provider === "gemini") {
       apiKey = s.geminiApiKey;
       if (!apiKey?.trim()) {
@@ -4753,6 +4772,7 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
 
   shouldUseStreaming(isSignedInOverride) {
     const s = getSettings();
+    if (s.cloudTranscriptionProvider === "openrouter") return false;
     if (s.useLocalWhisper) return false;
 
     // Managed enterprise STT is batch-only and outranks personal streaming

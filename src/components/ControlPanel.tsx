@@ -639,6 +639,7 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
         }
         const result = await window.electronAPI.retryTranscription(id, {
           managed,
+          geminiSmartCleanup: s.geminiSmartCleanup,
           useLocalWhisper: s.useLocalWhisper,
           localTranscriptionProvider: s.localTranscriptionProvider,
           cloudTranscriptionMode: s.cloudTranscriptionMode,

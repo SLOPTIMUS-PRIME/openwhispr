@@ -33,7 +33,7 @@ class UpdateManager {
 
     autoUpdater.setFeedURL({
       provider: "github",
-      owner: "OpenWhispr",
+      owner: "SLOPTIMUS-PRIME",
       repo: "openwhispr",
       private: false,
     });

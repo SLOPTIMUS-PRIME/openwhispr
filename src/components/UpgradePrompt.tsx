@@ -1,4 +1,5 @@
 import { Dialog, DialogContent } from "./ui/dialog";
+import { PERSONAL_FORK } from "../config/forkPolicy";
 import { ChevronRight } from "./icons";
 import { useTranslation } from "react-i18next";
 import { useUsage } from "../hooks/useUsage";
@@ -22,6 +23,7 @@ export default function UpgradePrompt({
   const usage = useUsage();
   const { openBillingPortal } = useBillingPortal(usage);
   const isPastDue = usage?.isPastDue ?? false;
+  if (PERSONAL_FORK) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -33,7 +33,7 @@ function extractText(data) {
 }
 
 async function transcribeWithGemini(
-  { audioBuffer, model, contentType, language, keyterms, apiKey },
+  { audioBuffer, model, contentType, language, keyterms, apiKey, smartCleanup = false },
   fetchImpl
 ) {
   if (!apiKey?.trim()) {
@@ -45,6 +45,7 @@ async function transcribeWithGemini(
 
   const resolvedModel = model || "gemini-3.5-transcribe";
   const transcriptionConfig = {};
+  if (smartCleanup === true) transcriptionConfig.mode = "smart";
   if (language && language !== "auto") {
     transcriptionConfig.language_codes = [language];
   }

@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { PERSONAL_FORK } from "../../config/forkPolicy";
 import { ExternalLink, Sparkles } from "../icons";
 import { Button } from "../ui/button";
 
@@ -65,8 +66,9 @@ interface UpsellBarProps {
 }
 
 /** Shown under a section's header when the user's plan doesn't include it. */
-export function UpsellBar({ message, onUpgrade }: UpsellBarProps): ReactElement {
+export function UpsellBar({ message, onUpgrade }: UpsellBarProps): ReactElement | null {
   const { t } = useTranslation();
+  if (PERSONAL_FORK) return null;
   return (
     <div className="flex items-center gap-3 rounded-lg border border-primary/20 dark:border-primary/30 bg-primary/5 dark:bg-primary/10 ps-3.5 pe-2 py-2">
       <Sparkles size={15} className="shrink-0 text-primary" />

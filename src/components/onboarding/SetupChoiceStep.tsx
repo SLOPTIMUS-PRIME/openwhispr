@@ -14,6 +14,7 @@ import {
   Zap,
 } from "../icons";
 import { useTranslation } from "react-i18next";
+import { PERSONAL_FORK } from "../../config/forkPolicy";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "../ui/dialog";
 import { usePolicySnapshot } from "../../hooks/usePolicy";
 import {
@@ -154,6 +155,21 @@ export default function SetupChoiceStep({
     selfHosted: selfHostedAllowed,
   } = availability;
   const moreOptionsAllowed = byokAllowed || selfHostedAllowed;
+  if (PERSONAL_FORK)
+    return (
+      <div className="flex flex-col gap-4 p-8">
+        <h2 className="text-2xl font-semibold">Choose your setup</h2>
+        {byokAllowed && <CardAction onClick={() => onSelect("byok")}>Use my API keys</CardAction>}
+        {localAllowed && (
+          <CardAction onClick={() => onSelect("local")}>Use local models</CardAction>
+        )}
+        {selfHostedAllowed && (
+          <CardAction onClick={() => onSelect("byok", { selfHosted: true })}>
+            Use my server
+          </CardAction>
+        )}
+      </div>
+    );
 
   const chooseCloud = () => {
     if (isSignedIn) onSelect("cloud");

@@ -17,6 +17,7 @@ import {
 import SidebarModal, { type SidebarItem } from "./ui/SidebarModal";
 import SettingsPage, { AccountAvatar, SettingsSectionType } from "./SettingsPage";
 import { useAuth } from "../hooks/useAuth";
+import { PERSONAL_FORK } from "../config/forkPolicy";
 
 export type { SettingsSectionType };
 
@@ -138,10 +139,14 @@ export default function SettingsModal({ open, onOpenChange, initialSection }: Se
         group: t("settingsModal.groups.system"),
       },
     ];
+    if (PERSONAL_FORK)
+      return items.filter((item) => !["account", "plansBilling", "workspace"].includes(item.id));
     return isSignedIn ? items : items.filter((item) => item.id !== "workspace");
   }, [t, isSignedIn]);
 
   const resolveSection = (section: string | undefined): SettingsSectionType => {
+    if (PERSONAL_FORK && (!section || ["account", "plansBilling", "workspace"].includes(section)))
+      return "general";
     if (!section) return "account";
     return (SECTION_ALIASES[section] ?? section) as SettingsSectionType;
   };

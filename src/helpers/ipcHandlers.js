@@ -133,6 +133,7 @@ const { TINFOIL_REALTIME_MODEL } = require("./tinfoilRealtimeStreaming");
 const { getTinfoilChatModels } = require("./tinfoilCatalog");
 const { transcribeWithTinfoil } = require("./tinfoilTranscription");
 const { transcribeWithGemini } = require("./geminiTranscription");
+const { transcribeWithOpenRouter } = require("./openrouterTranscription");
 const AudioStorageManager = require("./audioStorage");
 const LocalModelDownloadStatus = require("./localModelDownloadStatus");
 const AgentStreamRequestRegistry = require("./agentStreamRequestRegistry");
@@ -5069,14 +5070,30 @@ class IPCHandlers {
     // OpenAI-compatible multipart, so batch transcription is proxied through main.
     ipcMain.handle(
       "proxy-gemini-transcription",
-      serializeIpcError(async (event, { audioBuffer, model, language, keyterms }) => {
+      serializeIpcError(async (event, { audioBuffer, model, language, keyterms, smartCleanup }) => {
         return await transcribeWithGemini({
+          smartCleanup,
           audioBuffer: Buffer.from(audioBuffer),
           model,
           contentType: "audio/webm",
           language,
           keyterms,
           apiKey: this.environmentManager.getGeminiKey(),
+        });
+      })
+    );
+
+    ipcMain.handle(
+      "proxy-openrouter-transcription",
+      serializeIpcError(async (_event, { audioBuffer, model, language, contentType }) => {
+        if (audioBuffer?.byteLength > 25 * 1024 * 1024)
+          throw new Error(byokSizeCapError(25 * 1024 * 1024));
+        return transcribeWithOpenRouter({
+          audioBuffer: Buffer.from(audioBuffer),
+          model,
+          language,
+          contentType,
+          apiKey: this.environmentManager.getCustomTranscriptionKey(),
         });
       })
     );
@@ -7101,12 +7118,24 @@ class IPCHandlers {
           }
           const { text } = await transcribeWithGemini({
             audioBuffer: buffer,
+            smartCleanup: route.smartCleanup,
             model: route.model,
             contentType: "audio/webm",
             language: route.language,
             apiKey: this.environmentManager.getGeminiKey(),
           });
           result = { text, source: "gemini", model: route.model };
+        } else if (route.transport === "proxied" && route.provider === "openrouter") {
+          if (route.sizeCapBytes && buffer.byteLength > route.sizeCapBytes)
+            throw new Error(byokSizeCapError(route.sizeCapBytes));
+          const { text } = await transcribeWithOpenRouter({
+            audioBuffer: buffer,
+            model: route.model,
+            contentType: "audio/webm",
+            language: route.language,
+            apiKey: this.environmentManager.getCustomTranscriptionKey(),
+          });
+          result = { text, source: "openrouter", model: route.model };
         } else {
           // mistral/xai have no OpenAI-compatible endpoint — main talks to them
           // directly; everything else consumes the route endpoint as-is.
@@ -10735,6 +10764,7 @@ class IPCHandlers {
           remoteTranscriptionUrl,
           remoteTranscriptionModel,
           managed,
+          geminiSmartCleanup,
         }
       ) => {
         const fs = require("fs");
@@ -10758,6 +10788,7 @@ class IPCHandlers {
               cloudTranscriptionBaseUrl: baseUrl,
               cortiEnvironment: environment,
               cortiTenant: tenant,
+              geminiSmartCleanup,
             },
             providers: transcriptionProviderBaseUrls(),
             managed,
@@ -10863,9 +10894,20 @@ class IPCHandlers {
             // branch below, and Gemini's language_codes is a hard constraint.
             const { text } = await transcribeWithGemini({
               audioBuffer: fs.readFileSync(realByok),
+              smartCleanup: route.smartCleanup,
               model: route.model,
               contentType: providerContentType(realByok),
               apiKey: apiKey || this.environmentManager.getGeminiKey(),
+            });
+            return { success: true, text };
+          }
+
+          if (route.transport === "proxied" && route.provider === "openrouter") {
+            const { text } = await transcribeWithOpenRouter({
+              audioBuffer: fs.readFileSync(realByok),
+              model: route.model,
+              contentType: providerContentType(realByok),
+              apiKey: apiKey || this.environmentManager.getCustomTranscriptionKey(),
             });
             return { success: true, text };
           }

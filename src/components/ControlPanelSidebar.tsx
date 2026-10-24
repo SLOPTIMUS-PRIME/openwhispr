@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { PERSONAL_FORK } from "../config/forkPolicy";
 import { Gift, Lock, Settings, ShieldCheck, HelpCircle, X, Zap } from "./icons";
 import logoIcon from "../assets/icon.png";
 import { useTranslation } from "react-i18next";
@@ -46,8 +47,10 @@ export default function ControlPanelSidebar({
     () => localStorage.getItem("upgradeProDismissed") === "true"
   );
 
-  const showLimitBanner = upsell === "show" && Boolean(isSignedIn) && Boolean(isOverLimit);
-  const showUpgradeBanner = upsell === "show" && !showLimitBanner && !upgradeDismissed;
+  const showLimitBanner =
+    !PERSONAL_FORK && upsell === "show" && Boolean(isSignedIn) && Boolean(isOverLimit);
+  const showUpgradeBanner =
+    !PERSONAL_FORK && upsell === "show" && !showLimitBanner && !upgradeDismissed;
 
   const navItems = useControlPanelNavItems();
 

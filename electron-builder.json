@@ -99,7 +99,6 @@
     "src/workers/**/*"
   ],
   "extraResources": [
-    ".env",
     {
       "from": "src/assets",
       "to": "src/assets",
@@ -277,7 +276,7 @@
   },
   "publish": {
     "provider": "github",
-    "owner": "OpenWhispr",
+    "owner": "SLOPTIMUS-PRIME",
     "repo": "openwhispr",
     "private": false,
     "releaseType": "draft"
