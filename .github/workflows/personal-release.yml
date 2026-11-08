@@ -79,6 +79,26 @@ jobs:
               (root/dest).write_bytes(gzip.decompress(raw) if name.endswith('.gz') else raw)
           (root/'ffmpeg').chmod(0o755)
           PY
+      - name: Fetch the pinned Electron runtime through the GitHub asset API
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          root=pathlib.Path('node_modules/electron')
+          version=json.loads((root/'package.json').read_text())['version']
+          name='electron-v'+version+'-linux-x64.zip'
+          expected=json.loads((root/'checksums.json').read_text())[name]
+          release=json.loads(subprocess.check_output(['gh','api','repos/electron/electron/releases/tags/v'+version]))
+          asset=next(a for a in release['assets'] if a['name']==name)
+          archive=pathlib.Path(os.environ['RUNNER_TEMP'])/name
+          subprocess.run(['gh','api','-H','Accept: application/octet-stream','repos/electron/electron/releases/assets/'+str(asset['id'])],stdout=archive.open('wb'),check=True)
+          digest=hashlib.file_digest(archive.open('rb'),'sha256').hexdigest()
+          assert archive.stat().st_size==asset['size'] and digest==expected and 'sha256:'+digest==asset['digest']
+          subprocess.run(['unzip','-qo',str(archive),'-d',str(root/'dist')],check=True)
+          assert (root/'dist/version').read_text().removeprefix('v')==version
+          (root/'path.txt').write_text('electron')
+          PY
       - name: Run dependency install scripts and prepare UI tooling
         run: |
           for attempt in 1 2 3; do
@@ -118,6 +138,7 @@ jobs:
           if (!/^v\d+\.\d+\.\d+$/.test(state.release_tag)) throw Error('Invalid production release');
           const version = state.release_tag.slice(1) + '-personal.' + process.env.GITHUB_RUN_NUMBER;
           const config = require('./electron-builder.json');
+          config.electronDist = require('path').resolve('node_modules/electron/dist');
           config.linux = {...config.linux, executableName: 'openwhispr', target: ['AppImage'], artifactName: 'OpenWhispr-Personal.AppImage'};
           config.publish = [{provider: 'github', owner: 'SLOPTIMUS-PRIME', repo: 'openwhispr', channel: 'personal', releaseType: 'release'}];
           config.extraMetadata = {...config.extraMetadata, version, personalSourceCommit: process.env.SOURCE_SHA};
