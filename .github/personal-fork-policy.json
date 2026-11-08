@@ -35,6 +35,7 @@
     }
   ],
   "protected_tests": [
+    "test/helpers/linuxIdleMonitor.test.js",
     "test/helpers/personalUpdatePolicy.test.js",
     "test/helpers/updater.test.js",
     "test/components/forkManualModel.test.js",

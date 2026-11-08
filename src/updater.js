@@ -1,5 +1,6 @@
 const { autoUpdater } = require("electron-updater");
 const { canRestart } = require("./helpers/personalUpdatePolicy");
+const LinuxIdleMonitor = require("./helpers/linuxIdleMonitor");
 
 // electron-updater can only replace an AppImage on Linux; deb, rpm and tar.gz
 // installs are updated by the package manager instead.
@@ -22,6 +23,7 @@ class UpdateManager {
     this.activity = new Map();
     this.mainBusy = () => true;
     this.restartInterval = null;
+    this.idleMonitor = new LinuxIdleMonitor();
 
     this.setupAutoUpdater();
   }
@@ -266,7 +268,11 @@ class UpdateManager {
     return canRestart({
       enabled: manual || this.autoUpdatesEnabled,
       downloaded: this.updateDownloaded,
-      idleSeconds: manual ? 60 : require("electron").powerMonitor.getSystemIdleTime(),
+      idleSeconds: manual
+        ? 60
+        : this.idleMonitor.getIdleSeconds(() =>
+            require("electron").powerMonitor.getSystemIdleTime()
+          ),
       panelVisible: manual
         ? false
         : !!(
@@ -403,6 +409,7 @@ class UpdateManager {
   }
 
   cleanup() {
+    this.idleMonitor.stop();
     if (this.restartInterval) clearInterval(this.restartInterval);
     this.activity.clear();
     if (this.updateCheckInterval) {
