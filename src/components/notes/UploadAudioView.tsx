@@ -515,6 +515,7 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
   };
 
   const buildTranscriptionConfig = (): FileTranscriptionConfig => ({
+    geminiSmartCleanup: useSettingsStore.getState().geminiSmartCleanup,
     useLocalWhisper,
     localTranscriptionProvider: localTranscriptionProvider as string,
     whisperModel,

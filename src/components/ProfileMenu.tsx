@@ -1,4 +1,5 @@
 import React from "react";
+import { PERSONAL_FORK } from "../config/forkPolicy";
 import { useTranslation } from "react-i18next";
 import { CreditCard, Gift, LogOut, UserCircle } from "./icons";
 import MemberAvatar from "./MemberAvatar";
@@ -29,11 +30,12 @@ export default function ProfileMenu({
   onOpenSettings,
   onOpenReferrals,
   onSignOut,
-}: ProfileMenuProps): React.ReactElement {
+}: ProfileMenuProps): React.ReactElement | null {
   const { t } = useTranslation();
   const { isSignedIn, isLoaded, user } = useAuth();
   const usage = useUsage();
   const { planLabel } = useAccountPlan(usage);
+  if (PERSONAL_FORK) return null;
 
   // Until the session settles a signed-in user reads as signed out; hold the slot instead of
   // flashing Sign in.

@@ -1642,6 +1642,7 @@ declare global {
       retryTranscription: (
         id: number,
         settings?: {
+          geminiSmartCleanup?: boolean;
           useLocalWhisper: boolean;
           localTranscriptionProvider: string;
           cloudTranscriptionMode: string;
@@ -1707,7 +1708,8 @@ declare global {
         sourceFile?: string | null,
         audioDuration?: number | null,
         folderId?: number | null,
-        spaceId?: number | null
+        spaceId?: number | null,
+        transcript?: string | null
       ) => Promise<{ success: boolean; note?: NoteItem }>;
       getNote: (id: number) => Promise<NoteItem | null>;
       getNotes: (
@@ -2304,6 +2306,7 @@ declare global {
       checkForUpdates: () => Promise<UpdateCheckResult>;
       downloadUpdate: () => Promise<UpdateResult>;
       installUpdate: () => Promise<UpdateResult>;
+      reportUpdateActivity: (busy: boolean) => void;
       getAppVersion: () => Promise<AppVersionResult>;
       getPostMigrationState: () => Promise<{ justMigrated: boolean }>;
       getOAuthProtocolRegistered: () => Promise<boolean>;
@@ -2390,6 +2393,13 @@ declare global {
         model?: string;
         language?: string;
         keyterms?: string[];
+      }) => Promise<ProxyTranscriptionResult>;
+
+      proxyOpenrouterTranscription?: (data: {
+        audioBuffer: ArrayBuffer;
+        model: string;
+        language?: string;
+        contentType?: string;
       }) => Promise<ProxyTranscriptionResult>;
 
       // Groq API key management
@@ -2816,6 +2826,7 @@ declare global {
 
       // BYOK audio file transcription
       transcribeAudioFileByok?: (options: {
+        geminiSmartCleanup?: boolean;
         filePath: string;
         apiKey: string;
         baseUrl: string;
@@ -3371,7 +3382,12 @@ declare global {
         segments: Array<{ start: number; end: number; speaker: string }>,
         text: string,
         duration: number
-      ) => Promise<{ success: boolean; text?: string; error?: string }>;
+      ) => Promise<{
+        success: boolean;
+        text?: string;
+        segments?: Array<{ text: string; start: number; end: number; speaker: string }>;
+        error?: string;
+      }>;
       diarizeAudioFile?: (
         filePath: string,
         options?: { numSpeakers?: number; threshold?: number; requestId?: string }

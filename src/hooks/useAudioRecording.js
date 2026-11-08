@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { PERSONAL_FORK } from "../config/forkPolicy";
 import { useTranslation } from "react-i18next";
 import AudioManager from "../helpers/audioManager";
 import logger from "../utils/logger";
@@ -1010,14 +1011,15 @@ export const useAudioRecording = (toast, options = {}) => {
     const unsubscribePolicy = usePolicyStore.subscribe(() => {
       window.electronAPI.setScreenContextEnabled?.(getSettings().voiceAgentScreenContext);
     });
-    window.electronAPI.getSttConfig?.().then((config) => {
-      if (config?.success && audioManagerRef.current) {
-        audioManagerRef.current.setSttConfig(config);
-        if (audioManagerRef.current.shouldUseStreaming()) {
-          audioManagerRef.current.warmupStreamingConnection();
+    if (!PERSONAL_FORK)
+      window.electronAPI.getSttConfig?.().then((config) => {
+        if (config?.success && audioManagerRef.current) {
+          audioManagerRef.current.setSttConfig(config);
+          if (audioManagerRef.current.shouldUseStreaming()) {
+            audioManagerRef.current.warmupStreamingConnection();
+          }
         }
-      }
-    });
+      });
 
     const handleToggle = async ({
       voiceAgentRequested = false,

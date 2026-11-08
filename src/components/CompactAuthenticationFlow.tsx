@@ -1,4 +1,6 @@
 import { useState, type JSX } from "react";
+import { PERSONAL_FORK } from "../config/forkPolicy";
+import { Button } from "./ui/button";
 import { signOut } from "../lib/auth";
 import AuthenticationStep from "./AuthenticationStep";
 import EmailVerificationStep from "./EmailVerificationStep";
@@ -39,7 +41,7 @@ export function CompactAuthenticationFlow({
     onResumeStateChange?.({ pendingVerificationEmail: email, ...patch });
   };
 
-  if (pendingVerificationEmail) {
+  if (!PERSONAL_FORK && pendingVerificationEmail) {
     return (
       <EmailVerificationStep
         email={pendingVerificationEmail}
@@ -60,6 +62,14 @@ export function CompactAuthenticationFlow({
     );
   }
 
+  if (PERSONAL_FORK)
+    return (
+      <div className="flex min-h-full flex-col justify-center gap-6 p-10">
+        <h1 className="text-2xl font-semibold">OpenWhispr Personal</h1>
+        <p>Use local models or your own API keys. No OpenWhispr account is needed.</p>
+        <Button onClick={onContinueWithoutAccount}>Continue</Button>
+      </div>
+    );
   return (
     <AuthenticationStep
       onContinueWithoutAccount={onContinueWithoutAccount}

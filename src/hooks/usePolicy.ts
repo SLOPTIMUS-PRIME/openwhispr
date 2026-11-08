@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { PERSONAL_FORK } from "../config/forkPolicy";
 import { useShallow } from "zustand/react/shallow";
 import { usePolicyStore } from "../stores/policyStore";
 import { selectPolicyEffectiveSettings, useSettingsStore } from "../stores/settingsStore";
@@ -54,7 +55,10 @@ export function usePolicyModeOptions<T extends { id: InferenceMode; disabled?: b
   }
 ): PolicyModeOptions<T> {
   const snapshot = usePolicySnapshot();
-  const modes = filterModeOptionsByPolicy(options, scope, snapshot, providerCatalog);
+  const personalOptions = PERSONAL_FORK
+    ? options.filter((option) => option.id !== "openwhispr")
+    : options;
+  const modes = filterModeOptionsByPolicy(personalOptions, scope, snapshot, providerCatalog);
   const selectionIsVisible = modes.some((option) => option.id === selectedMode && !option.disabled);
   const preservesRawSelection = snapshot.status === "idle" || snapshot.status === "unmanaged";
   return {
@@ -63,6 +67,7 @@ export function usePolicyModeOptions<T extends { id: InferenceMode; disabled?: b
       preservesRawSelection || selectionIsVisible
         ? selectedMode
         : reconcilePolicyModeSelection(options, scope, snapshot, selectedMode, providerCatalog),
-    isModeAllowed: (mode: InferenceMode) => isModeAllowedByPolicy(snapshot, scope, mode),
+    isModeAllowed: (mode: InferenceMode) =>
+      (!PERSONAL_FORK || mode !== "openwhispr") && isModeAllowedByPolicy(snapshot, scope, mode),
   };
 }

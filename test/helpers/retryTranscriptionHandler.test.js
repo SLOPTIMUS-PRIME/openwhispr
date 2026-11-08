@@ -1015,3 +1015,75 @@ test("upload: an HTTP failure logs its status and a redacted body", async (t) =>
   assert.match(failure.meta.body, /Incorrect API key provided/);
   assert.equal(failure.meta.body.includes("sk-proj-leakedKey12345"), false);
 });
+
+const OPENROUTER_SETTINGS = {
+  cloudTranscriptionProvider: "openrouter",
+  cloudTranscriptionMode: "byok",
+  transcriptionMode: "providers",
+  cloudTranscriptionModel: "vendor/example:nitro",
+  preferredLanguage: "en-US",
+};
+
+function openrouterRequestBody() {
+  return JSON.parse(fetches[0].init.body.toString("utf8"));
+}
+
+test("retry: openrouter posts base64 JSON to its transcription endpoint with the custom-slot key", async () => {
+  fetches.length = 0;
+  const result = await invoke(OPENROUTER_SETTINGS);
+
+  assert.equal(result.success, true);
+  assert.equal(textUpdates.at(-1).text, "transcribed");
+  assert.ok(result.transcription, "retry returns the updated history row, not a provider payload");
+  assert.equal(fetches.length, 1);
+  assert.equal(fetches[0].url, "https://openrouter.ai/api/v1/audio/transcriptions");
+  assert.equal(fetches[0].init.headers.Authorization, "Bearer ck-custom");
+  const body = openrouterRequestBody();
+  assert.equal(
+    body.model,
+    "vendor/example:nitro",
+    "the stored slug rides through the retry verbatim"
+  );
+  assert.deepEqual(body.input_audio, {
+    data: Buffer.from([1, 2, 3]).toString("base64"),
+    format: "webm",
+  });
+  assert.equal(body.response_format, "json");
+  assert.deepEqual(body.provider, { data_collection: "deny" });
+  assert.equal(body.language, "en");
+});
+
+test("retry: an openrouter selection without a model fails closed before any request", async () => {
+  fetches.length = 0;
+  const result = await invoke({ ...OPENROUTER_SETTINGS, cloudTranscriptionModel: "" });
+  assert.equal(result.success, false);
+  assert.equal(fetches.length, 0);
+});
+
+test("upload: openrouter uploads the file through the dedicated JSON endpoint", async () => {
+  fetches.length = 0;
+  const result = await invokeUpload({
+    apiKey: "",
+    baseUrl: "",
+    model: "microsoft/mai-transcribe-2:floor",
+    provider: "openrouter",
+    language: "",
+    transcriptionMode: "providers",
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(result.text, "transcribed");
+  assert.equal(fetches.length, 1);
+  assert.equal(fetches[0].url, "https://openrouter.ai/api/v1/audio/transcriptions");
+  assert.equal(
+    fetches[0].init.headers.Authorization,
+    "Bearer ck-custom",
+    "an absent renderer key falls back to the main-process custom slot"
+  );
+  const body = openrouterRequestBody();
+  assert.equal(body.model, "microsoft/mai-transcribe-2:floor");
+  assert.equal(body.input_audio.format, "webm");
+  assert.deepEqual(body.provider, { data_collection: "deny" });
+  assert.equal("language" in body, false, "uploads must not inherit the dictation language hint");
+  assert.equal("model" in body, true);
+});

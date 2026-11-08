@@ -251,6 +251,12 @@
   },
   "transcriptionProviders": [
     {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "models": []
+    },
+    {
       "id": "openai",
       "name": "OpenAI",
       "baseUrl": "https://api.openai.com/v1",

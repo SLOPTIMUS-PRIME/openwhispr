@@ -99,7 +99,6 @@
     "src/workers/**/*"
   ],
   "extraResources": [
-    ".env",
     {
       "from": "src/assets",
       "to": "src/assets",
@@ -125,6 +124,7 @@
         "macos-media-remote",
         "MediaRemoteAdapter.framework/**",
         "linux-fast-paste",
+        "linux-idle-monitor",
         "linux-system-audio-helper",
         "linux-text-monitor",
         "linux-key-listener*",
@@ -277,7 +277,7 @@
   },
   "publish": {
     "provider": "github",
-    "owner": "OpenWhispr",
+    "owner": "SLOPTIMUS-PRIME",
     "repo": "openwhispr",
     "private": false,
     "releaseType": "draft"

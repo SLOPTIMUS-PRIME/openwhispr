@@ -61,6 +61,7 @@ const PROVIDER_KEY_MISSING_MESSAGE_KEY =
 export const STREAMING_ONLY_PROVIDERS = new Set(["deepgram", "assemblyai"]);
 
 export interface TranscriptionRouteSettings {
+  geminiSmartCleanup?: boolean;
   transcriptionMode?: string;
   useLocalWhisper?: boolean;
   remoteTranscriptionUrl?: string;
@@ -116,7 +117,8 @@ export type TranscriptionRoute =
   | { transport: "local" }
   | {
       transport: "proxied";
-      provider: "tinfoil" | "mistral" | "xai" | "corti" | "gemini";
+      provider: "tinfoil" | "mistral" | "xai" | "corti" | "gemini" | "openrouter";
+      smartCleanup?: boolean;
       model: string | null;
       language?: string;
       sizeCapBytes: number;
@@ -179,6 +181,7 @@ export const XAI_STT_LANGUAGES = new Set([
 // two together for every shipping model.
 export function resolveByokModel(provider: string, configuredModel?: string): string {
   const trimmed = (configuredModel || "").trim();
+  if (provider === "openrouter") return trimmed;
   if (provider === "custom") return trimmed || "whisper-1";
   if (trimmed) {
     const matchesProvider =
@@ -350,6 +353,7 @@ export function resolveTranscriptionRoute({
       provider,
       model,
       language,
+      ...(s.geminiSmartCleanup === true ? { smartCleanup: true } : {}),
       sizeCapBytes: GEMINI_FILE_SIZE_LIMIT,
     };
   }
@@ -364,6 +368,12 @@ export function resolveTranscriptionRoute({
       cortiEnvironment: s.cortiEnvironment || "us",
       cortiTenant: (s.cortiTenant || "").trim() || "base",
     };
+  }
+
+  if (provider === "openrouter") {
+    if (!model)
+      return error("Select an OpenRouter transcription model in Settings.", "MODEL_MISSING");
+    return { transport: "proxied", provider, model, language, sizeCapBytes: BYOK_FILE_SIZE_LIMIT };
   }
 
   if (provider === "custom") {

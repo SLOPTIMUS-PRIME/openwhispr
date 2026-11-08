@@ -6,6 +6,7 @@ import { Download, Trash2, Cloud, Lock, X, Zap, Check, CircleAlert } from "./ico
 import { ProviderIcon } from "./ui/ProviderIcon";
 import { ProviderTabs } from "./ui/ProviderTabs";
 import ModelCardList from "./ui/ModelCardList";
+import OpenAICompatiblePanel from "./OpenAICompatiblePanel";
 import { DownloadProgressBar } from "./ui/DownloadProgressBar";
 import { ConfirmDialog } from "./ui/dialog";
 import { useDialogs } from "../hooks/useDialogs";
@@ -252,6 +253,7 @@ interface TranscriptionModelPickerProps {
 
 const CLOUD_PROVIDER_TABS = [
   { id: "openai", name: "OpenAI" },
+  { id: "openrouter", name: "OpenRouter" },
   { id: "groq", name: "Groq" },
   { id: "xai", name: "xAI" },
   { id: "mistral", name: "Mistral" },
@@ -452,6 +454,8 @@ export default function TranscriptionModelPicker({
   const switchCloudTranscriptionProvider = useSettingsStore(
     (s) => s.switchCloudTranscriptionProvider
   );
+  const geminiSmartCleanup = useSettingsStore((s) => s.geminiSmartCleanup);
+  const setGeminiSmartCleanup = useSettingsStore((s) => s.setGeminiSmartCleanup);
   const openaiApiKey = useSettingsStore((s) => s.openaiApiKey);
   const setOpenaiApiKey = useSettingsStore((s) => s.setOpenaiApiKey);
   const groqApiKey = useSettingsStore((s) => s.groqApiKey);
@@ -1032,6 +1036,9 @@ export default function TranscriptionModelPicker({
     }
     if (normalized) {
       for (const provider of cloudProviders) {
+        // Choosing the new named provider is explicit; blurring an existing
+        // Custom OpenRouter address must not reset its saved model or routing.
+        if (provider.id === "openrouter") continue;
         const providerNormalized = normalizeBaseUrl(provider.baseUrl);
         if (normalized === providerNormalized) {
           switchCloudTranscriptionProvider(transcriptionContext, provider.id);
@@ -1179,7 +1186,11 @@ export default function TranscriptionModelPicker({
     // A hidden panel is not ready to ask; a shown one asks again, and the main process answers
     // a check it remembers at once.
     ready:
-      !effectiveLocal && providerAllowed(displayedCloudProvider) && connection.ready && visible,
+      displayedCloudProvider !== "openrouter" &&
+      !effectiveLocal &&
+      providerAllowed(displayedCloudProvider) &&
+      connection.ready &&
+      visible,
     // A half-typed address may belong to someone else: nothing is sent while it is edited.
     hold: isCustom && endpointHold.held,
     delayMs,
@@ -1407,7 +1418,22 @@ export default function TranscriptionModelPicker({
 
           {providerAllowed(displayedCloudProvider) && (
             <div>
-              {displayedCloudProvider === "custom" ? (
+              {displayedCloudProvider === "openrouter" ? (
+                <OpenAICompatiblePanel
+                  key={`${transcriptionContext}-openrouter-stt`}
+                  scope="transcription"
+                  provider="openrouter"
+                  baseUrl="https://openrouter.ai/api/v1"
+                  setBaseUrl={() => {}}
+                  lockedBaseUrl
+                  apiKeyRequired
+                  getKeyUrl="https://openrouter.ai/settings/keys"
+                  apiKey={customTranscriptionApiKey}
+                  setApiKey={setCustomTranscriptionApiKey}
+                  model={panelModel}
+                  setModel={handleCloudModelSelect}
+                />
+              ) : displayedCloudProvider === "custom" ? (
                 <div className="space-y-2" onFocus={editing.onFocus} onBlur={editing.onBlur}>
                   <div className="space-y-1.5">
                     <label className="block text-xs font-medium text-foreground">
@@ -1545,6 +1571,26 @@ export default function TranscriptionModelPicker({
                       onModelSelect={handleCloudModelSelect}
                       colorScheme="purple"
                     />
+                    {displayedCloudProvider === "gemini" &&
+                      !displayedCloudModel.includes("live") && (
+                        <label className="flex items-start gap-2 py-3 text-sm">
+                          <input
+                            type="checkbox"
+                            dir="ltr"
+                            aria-label="Gemini Smart cleanup"
+                            checked={geminiSmartCleanup}
+                            onChange={(event) => setGeminiSmartCleanup(event.target.checked)}
+                          />
+                          <span>
+                            Gemini Smart cleanup
+                            <span className="block text-xs text-muted-foreground">
+                              Remove fillers, false starts and spoken corrections in the
+                              transcription request. Direct Gemini batch only; disable separate text
+                              cleanup to avoid a second LLM request.
+                            </span>
+                          </span>
+                        </label>
+                      )}
                     {displayedCloudProvider === "tinfoil" && (
                       <p className="text-xs text-muted-foreground/70">
                         {t("transcription.tinfoil.transportNote")}{" "}

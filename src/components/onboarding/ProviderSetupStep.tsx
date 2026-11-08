@@ -58,6 +58,7 @@ import {
 } from "./pendingLocalModels";
 import { isLocalStageDownloadActive } from "./localDownloadState";
 import { isBlankByokDraft, resolveSavedByokConfig } from "./savedByokConfig";
+import { PERSONAL_FORK } from "../../config/forkPolicy";
 
 export function SetupStageStepper({ stepId }: { stepId: OnboardingStepId }) {
   const { t } = useTranslation();
@@ -352,7 +353,22 @@ export function ByokProviderStep({
   // tracked by the endpoint it was saved under — the draft, and anything typed after it,
   // can name a different server than the saved settings do.
   const [seed] = useState(() => {
-    const saved = resolveSavedByokConfig(stepId, store);
+    // Personal-mode defaults are usable provider modes, not a saved setup.
+    // Do not let those defaults override a first-run self-hosted choice.
+    const savedKeys =
+      stepId === "byok-assistant"
+        ? ["chatAgentMode", "chatAgentProvider", "chatAgentModel", "chatAgentRemoteUrl"]
+        : [
+            "transcriptionMode",
+            "cloudTranscriptionMode",
+            "cloudTranscriptionProvider",
+            "cloudTranscriptionModel",
+            "cloudTranscriptionBaseUrl",
+            "remoteTranscriptionUrl",
+          ];
+    const hasSavedSetup =
+      !PERSONAL_FORK || savedKeys.some((key) => localStorage.getItem(key) !== null);
+    const saved = hasSavedSetup ? resolveSavedByokConfig(stepId, store) : null;
     const hasDraft = Boolean(resumeState && !isBlankByokDraft(resumeState));
     const draft = hasDraft ? resumeState : saved?.draft;
     const providerData = providers.find((provider) => provider.id === draft?.selectedProvider);
