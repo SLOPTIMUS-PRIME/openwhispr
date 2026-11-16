@@ -27,7 +27,7 @@ jobs:
           path: control
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: feat/byok-cleanup
+          ref: main
           fetch-depth: 0
           persist-credentials: false
           path: source
@@ -636,7 +636,7 @@ jobs:
         run: |
           python "$RUNNER_TEMP/control/scripts/upstream-maintenance.py" check-patch --repo . --base "$BASE" --patch "$RUNNER_TEMP/artifacts/maintenance-candidate/candidate.patch" --context "$RUNNER_TEMP/artifacts/maintenance-context/context.json"
           test "$(git write-tree)" = "$VERIFIED_TREE"
-          git fetch origin refs/heads/feat/byok-cleanup
+          git fetch origin refs/heads/main
           test "$(git rev-parse FETCH_HEAD)" = "$BASE"
           git config user.name 'OpenWhispr maintenance'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -647,8 +647,8 @@ jobs:
           subprocess.run(['git','-c','core.hooksPath=/dev/null','commit','-m',message],check=True)
           PY
           gh auth setup-git
-          git -c core.hooksPath=/dev/null push origin HEAD:refs/heads/feat/byok-cleanup
-          test "$(gh api repos/SLOPTIMUS-PRIME/openwhispr/git/ref/heads/feat/byok-cleanup --jq .object.sha)" = "$(git rev-parse HEAD)"
+          git -c core.hooksPath=/dev/null push origin HEAD:refs/heads/main
+          test "$(gh api repos/SLOPTIMUS-PRIME/openwhispr/git/ref/heads/main --jq .object.sha)" = "$(git rev-parse HEAD)"
           printf 'Updated personal branch to `%s`. Desktop package unchanged.\n' "$(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
 
   report-failure:

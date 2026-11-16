@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "personal_branch": "feat/byok-cleanup",
+  "personal_branch": "main",
   "upstream_repository": "OpenWhispr/openwhispr",
   "initial_upstream_commit": "7a6ae826de9ec1caf65f3a6e769475dab2ae829f",
   "contract": "FORK.md",

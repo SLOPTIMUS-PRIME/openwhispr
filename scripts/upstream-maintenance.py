@@ -36,7 +36,7 @@ import tempfile
 UPSTREAM_REPO = 'OpenWhispr/openwhispr'
 UPSTREAM_URL = 'https://github.com/OpenWhispr/openwhispr.git'
 INITIAL_UPSTREAM = '7a6ae826de9ec1caf65f3a6e769475dab2ae829f'
-PERSONAL_BRANCH = 'feat/byok-cleanup'
+PERSONAL_BRANCH = 'main'
 GH_COMMAND = ['gh']
 STATE_PATH = '.github/upstream-maintenance-state.json'
 POLICY_PATH = '.github/personal-fork-policy.json'

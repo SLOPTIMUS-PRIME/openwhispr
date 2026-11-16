@@ -32,7 +32,7 @@ jobs:
           REBUILD: ${{ inputs.rebuild }}
         run: |
           set -euo pipefail
-          sha=$(gh api repos/SLOPTIMUS-PRIME/openwhispr/git/ref/heads/feat/byok-cleanup --jq .object.sha)
+          sha=$(gh api repos/SLOPTIMUS-PRIME/openwhispr/git/ref/heads/main --jq .object.sha)
           printf 'sha=%s\n' "$sha" >> "$GITHUB_OUTPUT"
           previous=$(gh api repos/SLOPTIMUS-PRIME/openwhispr/releases/latest --jq .target_commitish 2>/dev/null || true)
           if [[ "$previous" == "$sha" && "$REBUILD" != true ]]; then
@@ -290,7 +290,7 @@ jobs:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
           set -euo pipefail
-          current=$(gh api repos/SLOPTIMUS-PRIME/openwhispr/git/ref/heads/feat/byok-cleanup --jq .object.sha)
+          current=$(gh api repos/SLOPTIMUS-PRIME/openwhispr/git/ref/heads/main --jq .object.sha)
           [[ "$current" == "$SOURCE_SHA" ]] || { printf 'Source changed during packaging; refusing stale release\n'; exit 1; }
           python - <<'PY'
           import base64, hashlib, json, os, pathlib

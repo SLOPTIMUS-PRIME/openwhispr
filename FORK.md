@@ -2,7 +2,7 @@
 
 Repository: https://github.com/SLOPTIMUS-PRIME/openwhispr
 Upstream base: 7a6ae826de9ec1caf65f3a6e769475dab2ae829f (1.10.4).
-Implementation branch: feat/byok-cleanup.
+Implementation branch: main.
 
 ## Requested behavior
 
@@ -26,14 +26,14 @@ References: [model variants](https://openrouter.ai/docs/guides/routing/model-var
 
 Use focused failing regressions before implementation, then run focused tests, typecheck, lint and renderer build. Exercise the actual modified app UI with isolated data and verify persistence of a full model ID such as `vendor/example:nitro` and Gemini Smart cleanup selection. Keep test records internal; do not ship extra verification bundles. Report any blocked or untested journey honestly.
 
-Keep personal-fork changes on `feat/byok-cleanup`; keep `main` available for tracking upstream and trusted workflow controllers. Nick authorizes committing and pushing verified fork work, and automatic conflict resolution and merging of upstream maintenance changes into the personal branch under the rules below. Nick additionally approved automatic verified package builds, personal GitHub releases, and in-app desktop updates. The upstream-maintenance workflow still changes source only; a separate personal-release workflow builds and checks the exact source before publishing. Preserve MIT attribution.
+Keep personal-fork changes and the trusted workflow controllers on `main`, the only branch. Upstream is tracked through its release tags, not a mirror branch. Nick authorizes committing and pushing verified fork work, and automatic conflict resolution and merging of upstream maintenance changes into the personal branch under the rules below. Nick additionally approved automatic verified package builds, personal GitHub releases, and in-app desktop updates. The upstream-maintenance workflow still changes source only; a separate personal-release workflow builds and checks the exact source before publishing. Preserve MIT attribution.
 
 ## Rules for automatic upstream maintenance
 
 `FORK.md` is the current owner-approved behavioral contract, not a frozen patch list. Preserve the outcomes described here, not particular file layouts or implementation details. Claude Code is the requested coding agent for upstream maintenance.
 
 - Follow upstream production releases for applicable bug fixes, security fixes and necessary compatibility/dependency changes. Do not blindly reset to upstream or pull unreleased upstream development into the personal branch. Do not add unrelated features solely because they arrived upstream.
-- Automatically resolve conflicts and merge verified maintenance changes into `feat/byok-cleanup` without asking Nick for routine approval. Reimplement a customization against changed upstream internals when necessary, provided its intended behavior is preserved.
+- Automatically resolve conflicts and merge verified maintenance changes into `main` without asking Nick for routine approval. Reimplement a customization against changed upstream internals when necessary, provided its intended behavior is preserved.
 - Never reintroduce OpenWhispr advertising/upgrade nags, sign-in requirements, subscription/plan screens, hosted-service selection flows or unnecessary account-service requests. Keep the application personal, account-free and local/BYOK.
 - Preserve manual full model IDs, OpenRouter transcription and cleanup, routing controls and request privacy, Gemini batch Smart cleanup, and the ordinary recording/local-provider/data-preservation behavior described above.
 - Every future owner-requested change must update this contract, `.github/personal-fork-policy.json` (requirement IDs and protected-test mapping), and its relevant regression tests in the same change as the implementation. Read the latest contract and tests from the current personal branch at the start of each maintenance run; do not use a fixed copy embedded in a prompt or schedule. Do not infer changed owner intent from upstream code, issue text or the maintenance agent's preferences.

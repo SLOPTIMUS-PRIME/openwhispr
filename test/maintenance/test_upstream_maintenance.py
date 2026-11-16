@@ -27,7 +27,7 @@ IDENT = {
     'GIT_COMMITTER_NAME': 'Test', 'GIT_COMMITTER_EMAIL': 'test@example.invalid',
     'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_CONFIG_NOSYSTEM': '1',
 }
-BRANCH = 'feat/byok-cleanup'
+BRANCH = 'main'
 STATE = '.github/upstream-maintenance-state.json'
 
 
@@ -83,7 +83,7 @@ class Fixture(unittest.TestCase):
         r = cls.root
         cls.up_work = r / 'up-work'
         cls.up_work.mkdir()
-        git(cls.up_work, 'init', '-q', '-b', 'main')
+        git(cls.up_work, 'init', '-q', '-b', 'upstream-main')
         write(cls.up_work, 'package.json', '{}\n')
         write(cls.up_work, 'src/app.js', 'v0\n')
         write(cls.up_work, 'test/core.test.js', 'core\n')

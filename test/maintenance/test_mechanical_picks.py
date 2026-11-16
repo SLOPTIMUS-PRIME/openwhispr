@@ -25,7 +25,7 @@ IDENT = {
     'GIT_COMMITTER_NAME': 'Test', 'GIT_COMMITTER_EMAIL': 'test@example.invalid',
     'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_CONFIG_NOSYSTEM': '1',
 }
-BRANCH = 'feat/byok-cleanup'
+BRANCH = 'main'
 STATE = '.github/upstream-maintenance-state.json'
 PACKAGE = {
     'name': 'open-whispr', 'version': '1.0.0',
@@ -85,7 +85,7 @@ class World(unittest.TestCase):
         cls.root = Path(tempfile.mkdtemp(prefix='um-picks-'))
         up = cls.up = cls.root / 'up'
         up.mkdir()
-        git(up, 'init', '-q', '-b', 'main')
+        git(up, 'init', '-q', '-b', 'upstream-main')
         write(up, 'package.json', json.dumps(PACKAGE, indent=2) + '\n')
         write(up, 'src/app.js', lines('a'))
         write(up, 'src/fork.js', lines('f'))
@@ -157,7 +157,7 @@ class World(unittest.TestCase):
         # merge shape: side branch and main branch joined by a merge commit
         git(up, 'checkout', '-q', '-b', 'side')
         c['side'] = commit('side work', [('src/side.js', 'side\n')])
-        git(up, 'checkout', '-q', 'main')
+        git(up, 'checkout', '-q', 'upstream-main')
         c['main2'] = commit('main work', [('src/main2.js', 'main2\n')])
         git(up, 'merge', '-q', '--no-ff', '-m', 'merge side', 'side')
         c['merge'] = git(up, 'rev-parse', 'HEAD')
@@ -178,7 +178,7 @@ class World(unittest.TestCase):
         dest = self.work / name
         git(self.work, 'clone', '-q', str(self.source), str(dest))
         git(dest, 'checkout', '-q', BRANCH)
-        git(dest, 'fetch', '-q', '--no-tags', str(self.up), '+main:refs/upstream-maintenance/release')
+        git(dest, 'fetch', '-q', '--no-tags', str(self.up), '+upstream-main:refs/upstream-maintenance/release')
         return dest
 
     def context(self, repo, shas=None, previous=None, upstream=None, name='context.json'):
